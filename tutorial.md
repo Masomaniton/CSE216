@@ -6,9 +6,9 @@ The app code is already complete. You will work only in the `work/` Maven projec
 
 ## The scenario
 
-The Buzz production database is PostgreSQL, and it is currently unavailable. Tests that depend on that database would fail. Pointing tests at production is also unsafe: one of the admin commands drops the `accounts` table. A local SQLite database might be convenient, but using a different database engine can hide differences from PostgreSQL. The Twelve-Factor App recommends keeping development and production backing services similar; this exercise uses PostgreSQL for tests as well. See [Dev/prod parity](https://12factor.net/dev-prod-parity).
+Pointing tests at production is unsafe: one of the admin commands drops the `accounts` table. A local SQLite database might be convenient, but using a different database engine can hide differences from PostgreSQL. The Twelve-Factor App recommends keeping development and production backing services similar; this exercise uses PostgreSQL for tests as well. See [Dev/prod parity](https://12factor.net/dev-prod-parity).
 
-Testcontainers starts a temporary PostgreSQL database for the test run. The tests receive its connection URL and credentials, so they exercise real PostgreSQL without using the unavailable production database. The first run downloads the PostgreSQL image if Docker does not already have it.
+Testcontainers starts a temporary PostgreSQL database for the test run. The tests receive its connection URL and credentials, so they exercise real PostgreSQL in an isolated environment. The first run downloads the PostgreSQL image if Docker does not already have it.
 
 ## 1. Install and start Docker
 
@@ -58,143 +58,173 @@ Open `work/pom.xml`. Near the existing JUnit and PostgreSQL dependencies, find t
 </dependency>
 ```
 
-The PostgreSQL module provides the container class. The JUnit Jupiter module connects container startup and shutdown to JUnit’s test lifecycle. The PostgreSQL JDBC driver is already in the project; Testcontainers manages the server, while JDBC lets the application connect to it. The two Testcontainers modules are separate test dependencies in the [PostgreSQL module guide](https://java.testcontainers.org/modules/databases/postgres/) and [JUnit 5 integration guide](https://java.testcontainers.org/test_framework_integration/junit_5/).
+The PostgreSQL module provides the container class. The JUnit Jupiter module connects container startup and shutdown to JUnit’s test lifecycle. The PostgreSQL JDBC driver is already in the project; Testcontainers manages the server, while JDBC lets the application connect to it. The two Testcontainers modules are separate test dependencies in the [PostgreSQL module guide](https://java.testcontainers.org/modules/databases/postgres/) and [JUnit 5 integration guide](https://java.testcontainers.org/test_framework_integration/junit_5/). After saving `pom.xml`, reload or reimport the Maven project in your IDE. Until the dependencies are resolved, the `org.testcontainers` imports will appear unresolved.
+
+The starter test file also needs three Testcontainers imports and a container declaration. In `work/src/test/java/edu/lehigh/buzz/AdminCliIntegrationTest.java`, add these imports with the other imports:
+
+```java
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+```
+
+Add `@Testcontainers` directly above the `AdminCliIntegrationTest` class declaration, then add this field inside the class:
+
+```java
+@Container
+private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
+    "postgres:16.15-alpine3.24"
+)
+    .withDatabaseName("buzz")
+    .withUsername("buzz")
+    .withPassword("buzz");
+```
+
+Once the Maven dependencies have resolved, the `org.testcontainers` imports should resolve as well.
 
 ## 4. Replace the unfinished integration tests
 
-Open `work/src/test/java/edu/lehigh/buzz/AdminCliIntegrationTest.java`. Replace its contents with the following code:
+Open `work/src/test/java/edu/lehigh/buzz/AdminCliIntegrationTest.java`. Keep the existing package, imports, class declaration, and test method signatures. Section 3 adds the Testcontainers imports, class annotation, and container field. For each item below, replace the marked TODO section with its corresponding code. For the four tests and two helpers, replace the entire method (including its `UnsupportedOperationException`) with the code shown. For `setUp()` and `tearDown()`, paste the complete method where its TODO comment appears.
+
+Paste this `setUp()` method at `// TODO: Paste the setUp() method here.`:
 
 ```java
-package edu.lehigh.buzz;
+@BeforeEach
+void setUp() throws SQLException {
+    connection = DriverManager.getConnection(
+        POSTGRES.getJdbcUrl(),
+        POSTGRES.getUsername(),
+        POSTGRES.getPassword()
+    );
+    adminCli = new AdminCli(connection);
+    capturedOutput = new ByteArrayOutputStream();
+    output = new PrintStream(capturedOutput, true, StandardCharsets.UTF_8);
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+    new AccountsRepository(connection).dropTable();
+}
+```
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+Paste this `tearDown()` method at `// TODO: Paste the tearDown() method here.`:
 
-@Testcontainers
-class AdminCliIntegrationTest {
-    @Container
-    private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:16.15-alpine3.24")
-                    .withDatabaseName("buzz")
-                    .withUsername("buzz")
-                    .withPassword("buzz");
-
-    private Connection connection;
-    private AdminCli adminCli;
-    private ByteArrayOutputStream capturedOutput;
-    private PrintStream output;
-
-    @BeforeEach
-    void setUp() throws SQLException {
-        connection = DriverManager.getConnection(
-                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
-        adminCli = new AdminCli(connection);
-        capturedOutput = new ByteArrayOutputStream();
-        output = new PrintStream(capturedOutput, true, StandardCharsets.UTF_8);
-
-        new AccountsRepository(connection).dropTable();
-    }
-
-    @AfterEach
-    void tearDown() throws SQLException {
-        try {
-            if (connection != null) {
-                new AccountsRepository(connection).dropTable();
-            }
-        } finally {
-            if (output != null) {
-                output.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
+```java
+@AfterEach
+void tearDown() throws SQLException {
+    try {
+        if (connection != null) {
+            new AccountsRepository(connection).dropTable();
         }
-    }
-
-    @Test
-    void createTableCommandCreatesAccountsTable() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
-
-        assertTrue(accountsTableExists());
-        assertTrue(outputText().contains("Created accounts table."));
-    }
-
-    @Test
-    void dropTableCommandDropsAccountsTable() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
-        assertTrue(accountsTableExists());
-
-        adminCli.run(new String[] {"drop-table"}, output);
-
-        assertFalse(accountsTableExists());
-        assertTrue(outputText().contains("Dropped accounts table."));
-    }
-
-    @Test
-    void addAccountCommandInsertsAnAccount() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
-
-        adminCli.run(new String[] {
-                "add-account", "Ada Lovelace", "ada@buzz.example"
-        }, output);
-
-        List<Account> accounts = new AccountsRepository(connection).listAccounts();
-        assertTrue(accounts.stream().anyMatch(account ->
-                account.name().equals("Ada Lovelace")
-                        && account.email().equals("ada@buzz.example")));
-        assertTrue(outputText().contains("Created account:"));
-    }
-
-    @Test
-    void listAccountsCommandDisplaysAccounts() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
-        adminCli.run(new String[] {
-                "add-account", "Grace Hopper", "grace@buzz.example"
-        }, output);
-        capturedOutput.reset();
-
-        adminCli.run(new String[] {"list-accounts"}, output);
-
-        assertTrue(outputText().contains("Grace Hopper"));
-        assertTrue(outputText().contains("grace@buzz.example"));
-    }
-
-    private boolean accountsTableExists() throws SQLException {
-        try (ResultSet tables = connection.getMetaData()
-                .getTables(null, "public", "accounts", new String[] {"TABLE"})) {
-            return tables.next();
+    } finally {
+        if (output != null) {
+            output.close();
         }
-    }
-
-    private String outputText() {
-        return capturedOutput.toString(StandardCharsets.UTF_8);
+        if (connection != null) {
+            connection.close();
+        }
     }
 }
 ```
 
-Here is what the test setup does:
+Replace the complete `createTableCommandCreatesAccountsTable()` method with:
 
-1. `@Testcontainers` enables Testcontainers’ JUnit extension. The static `@Container` field is started once for this test class and stopped after the class finishes.
-2. `PostgreSQLContainer` starts PostgreSQL 16.15. The image tag includes the PostgreSQL patch version and Alpine version so repeated runs use the same image tag. `getJdbcUrl()`, `getUsername()`, and `getPassword()` provide the connection details for that temporary database. The test never uses production credentials or a production URL.
-3. `setUp()` opens one connection before each test and removes any leftover `accounts` table. `tearDown()` removes the table again and closes the connection. This lets every test exercise create/drop operations from a predictable starting state.
-4. Each test invokes the same `AdminCli` commands a person would use. The create and drop tests inspect PostgreSQL’s metadata; the add and list tests verify that a row is written and displayed.
+```java
+@Test
+void createTableCommandCreatesAccountsTable() throws SQLException {
+    adminCli.run(new String[] { "create-table" }, output);
 
-The table cleanup is especially important here: `drop-table` is deliberately destructive. It is safe because the test connection comes from the disposable container.
+    assertTrue(accountsTableExists());
+    assertTrue(outputText().contains("Created accounts table."));
+}
+```
+
+Replace the complete `dropTableCommandDropsAccountsTable()` method with:
+
+```java
+@Test
+void dropTableCommandDropsAccountsTable() throws SQLException {
+    adminCli.run(new String[] { "create-table" }, output);
+    assertTrue(accountsTableExists());
+
+    adminCli.run(new String[] { "drop-table" }, output);
+
+    assertFalse(accountsTableExists());
+    assertTrue(outputText().contains("Dropped accounts table."));
+}
+```
+
+Replace the complete `addAccountCommandInsertsAnAccount()` method with:
+
+```java
+@Test
+void addAccountCommandInsertsAnAccount() throws SQLException {
+    adminCli.run(new String[] { "create-table" }, output);
+
+    adminCli.run(
+        new String[] { "add-account", "Ada Lovelace", "ada@buzz.example" },
+        output
+    );
+
+    List<Account> accounts = new AccountsRepository(
+        connection
+    ).listAccounts();
+    assertTrue(
+        accounts
+            .stream()
+            .anyMatch(
+                account ->
+                    account.name().equals("Ada Lovelace") &&
+                    account.email().equals("ada@buzz.example")
+            )
+    );
+    assertTrue(outputText().contains("Created account:"));
+}
+```
+
+Replace the complete `listAccountsCommandDisplaysAccounts()` method with:
+
+```java
+@Test
+void listAccountsCommandDisplaysAccounts() throws SQLException {
+    adminCli.run(new String[] { "create-table" }, output);
+    adminCli.run(
+        new String[] {
+            "add-account",
+            "Grace Hopper",
+            "grace@buzz.example",
+        },
+        output
+    );
+    capturedOutput.reset();
+
+    adminCli.run(new String[] { "list-accounts" }, output);
+
+    assertTrue(outputText().contains("Grace Hopper"));
+    assertTrue(outputText().contains("grace@buzz.example"));
+}
+```
+
+Replace the complete `accountsTableExists()` helper with:
+
+```java
+private boolean accountsTableExists() throws SQLException {
+    try (
+        ResultSet tables = connection
+            .getMetaData()
+            .getTables(null, "public", "accounts", new String[] { "TABLE" })
+    ) {
+        return tables.next();
+    }
+}
+```
+
+Replace the complete `outputText()` helper with:
+
+```java
+private String outputText() {
+    return capturedOutput.toString(StandardCharsets.UTF_8);
+}
+```
+
+`@Testcontainers` starts the static PostgreSQL container once for this test class. `setUp()` opens a connection for each test and removes any leftover table; `tearDown()` cleans up and closes resources. Each test runs an `AdminCli` command and checks the resulting database state or output. The `drop-table` command is safe here because the connection points to the disposable container.
 
 ## 5. Run the completed tests
 
