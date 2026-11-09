@@ -1,15 +1,20 @@
-### overview and tools
+# The Buzz: PostgreSQL integration testing with Testcontainers
 
-This is a tutorial for how to use docker testcontainer to run a PostgreSQL server in order to have highly reproducible unit tests. This tutorial is for my classmates of software engineering. This tutorial uses Maven. The job of the tutorial taker is to "fill in the blanks" at every place the code comments indicate missing code. All code not relevant to the testcontainer is already written. The tutorial taker will have to update the `pom.xml`. The tutorial taker should come away with enough understanding to use this technique in other projects.
+This repository is a hands-on tutorial for software engineering students. It shows how to run PostgreSQL in a disposable Docker container while Maven tests exercise a Java admin CLI.
 
-### expected work and `tutorial.md`
+The fictional app is **The Buzz**, an internal social platform. Its small schema has one table, `accounts`, with `id`, `name`, and `email` columns. The CLI supports four operations:
 
-The tutorial taker will follow along with `tutorial.md`. This file tells the tutorial taker every required task, including downloading docker and every missing place in the code to complete, in order. Every missing piece of code is included as part of `tutorial.md` in a triple back tick block. That is, the tutorial taker is not expected to write any code. For each piece of code, there is enough explanation for someone competent in Java to fully understand without referencing documentation.
+- `create-table`
+- `drop-table`
+- `add-account <name> <email>`
+- `list-accounts`
 
-### motivation and completion criteria
+The `drop-table` command makes the example useful for discussing test isolation: tests must never point destructive operations at a production database. SQLite could provide a lightweight local database, but using PostgreSQL in tests keeps the test database closer to the production database and avoids differences between database engines.
 
-In the fictional scenario of the tutorial, the production database is down, and so calling `mvn package` and `java -jar target/...`. Initially, calling `mvn test` should result in unimplemented exceptions. The tutorial explains how, while the user could use a local SQLite file, this would fail the dev/prod parity principle of the 12-factor app, motitivating the need for docker testcontainers. The tutorial taker is complete when `mvn test` passes. This tutorial includes completed versions of every file so that the tutorial taker can compare to make sure everything matches. The tutorial explains how to do this with git diff, which is useful in case the tutorial taker wants to verify partial work.
+## Work through the tutorial
 
-### scope of the Web App
+Read [tutorial.md](tutorial.md) and do the exercises in the `work/` Maven project. The application and CLI are already implemented. The integration test methods intentionally throw `UnsupportedOperationException` until you add Testcontainers and complete the tests. Run `mvn test` from `work/` as the final check.
 
-The tutorial should have a purposely simplified web app. The application is an internal fictional social media platform called The Buzz. The simplified schema only has a single table. This table is called `accounts` and has `id`, `name`, and `email` fields. For the sake of simplicity, this tutorial omits the web apps `frontend` and `backend`, only including an `admin-cli`. The tutorial explains that using the prod DB for testing is particular important for the `admin-cli` because we would like to test functionality which includes dropping tables. The `admin-cli` should enable functions to create the `accounts` table, drop the `accounts` table, create a row in the `accounts` tables, and view the `acounts` table.
+The `solution/` directory is a separate, completed Maven project for comparison. Do not edit it while doing the exercise.
+
+Both projects target Java 17. Docker must be installed and running to execute the completed tests.
