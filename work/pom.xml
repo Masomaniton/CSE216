@@ -30,7 +30,6 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
         <!-- TODO: Add the two Testcontainers test dependencies from tutorial.md here. -->
     </dependencies>
 
