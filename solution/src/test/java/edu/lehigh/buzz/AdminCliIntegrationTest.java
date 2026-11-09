@@ -14,18 +14,20 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
 class AdminCliIntegrationTest {
+
     @Container
-    private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:16.15-alpine3.24")
-                    .withDatabaseName("buzz")
-                    .withUsername("buzz")
-                    .withPassword("buzz");
+    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
+        "postgres:16.15-alpine3.24"
+    )
+        .withDatabaseName("buzz")
+        .withUsername("buzz")
+        .withPassword("buzz");
 
     private Connection connection;
     private AdminCli adminCli;
@@ -35,7 +37,10 @@ class AdminCliIntegrationTest {
     @BeforeEach
     void setUp() throws SQLException {
         connection = DriverManager.getConnection(
-                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+            POSTGRES.getJdbcUrl(),
+            POSTGRES.getUsername(),
+            POSTGRES.getPassword()
+        );
         adminCli = new AdminCli(connection);
         capturedOutput = new ByteArrayOutputStream();
         output = new PrintStream(capturedOutput, true, StandardCharsets.UTF_8);
@@ -61,7 +66,7 @@ class AdminCliIntegrationTest {
 
     @Test
     void createTableCommandCreatesAccountsTable() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
+        adminCli.run(new String[] { "create-table" }, output);
 
         assertTrue(accountsTableExists());
         assertTrue(outputText().contains("Created accounts table."));
@@ -69,10 +74,10 @@ class AdminCliIntegrationTest {
 
     @Test
     void dropTableCommandDropsAccountsTable() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
+        adminCli.run(new String[] { "create-table" }, output);
         assertTrue(accountsTableExists());
 
-        adminCli.run(new String[] {"drop-table"}, output);
+        adminCli.run(new String[] { "drop-table" }, output);
 
         assertFalse(accountsTableExists());
         assertTrue(outputText().contains("Dropped accounts table."));
@@ -80,36 +85,53 @@ class AdminCliIntegrationTest {
 
     @Test
     void addAccountCommandInsertsAnAccount() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
+        adminCli.run(new String[] { "create-table" }, output);
 
-        adminCli.run(new String[] {
-                "add-account", "Ada Lovelace", "ada@buzz.example"
-        }, output);
+        adminCli.run(
+            new String[] { "add-account", "Ada Lovelace", "ada@buzz.example" },
+            output
+        );
 
-        List<Account> accounts = new AccountsRepository(connection).listAccounts();
-        assertTrue(accounts.stream().anyMatch(account ->
-                account.name().equals("Ada Lovelace")
-                        && account.email().equals("ada@buzz.example")));
+        List<Account> accounts = new AccountsRepository(
+            connection
+        ).listAccounts();
+        assertTrue(
+            accounts
+                .stream()
+                .anyMatch(
+                    account ->
+                        account.name().equals("Ada Lovelace") &&
+                        account.email().equals("ada@buzz.example")
+                )
+        );
         assertTrue(outputText().contains("Created account:"));
     }
 
     @Test
     void listAccountsCommandDisplaysAccounts() throws SQLException {
-        adminCli.run(new String[] {"create-table"}, output);
-        adminCli.run(new String[] {
-                "add-account", "Grace Hopper", "grace@buzz.example"
-        }, output);
+        adminCli.run(new String[] { "create-table" }, output);
+        adminCli.run(
+            new String[] {
+                "add-account",
+                "Grace Hopper",
+                "grace@buzz.example",
+            },
+            output
+        );
         capturedOutput.reset();
 
-        adminCli.run(new String[] {"list-accounts"}, output);
+        adminCli.run(new String[] { "list-accounts" }, output);
 
         assertTrue(outputText().contains("Grace Hopper"));
         assertTrue(outputText().contains("grace@buzz.example"));
     }
 
     private boolean accountsTableExists() throws SQLException {
-        try (ResultSet tables = connection.getMetaData()
-                .getTables(null, "public", "accounts", new String[] {"TABLE"})) {
+        try (
+            ResultSet tables = connection
+                .getMetaData()
+                .getTables(null, "public", "accounts", new String[] { "TABLE" })
+        ) {
             return tables.next();
         }
     }

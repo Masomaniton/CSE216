@@ -5,8 +5,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public final class AdminCli {
-    private static final String USAGE = "Usage: create-table | drop-table | "
-            + "add-account <name> <email> | list-accounts";
+
+    private static final String USAGE =
+        "Usage: create-table | drop-table | " +
+        "add-account <name> <email> | list-accounts";
 
     private final AccountsRepository accounts;
 
@@ -14,7 +16,8 @@ public final class AdminCli {
         accounts = new AccountsRepository(connection);
     }
 
-    public void run(String[] arguments, PrintStream output) throws SQLException {
+    public void run(String[] arguments, PrintStream output)
+        throws SQLException {
         if (arguments == null || arguments.length == 0) {
             throw new IllegalArgumentException(USAGE);
         }
@@ -32,9 +35,16 @@ public final class AdminCli {
             }
             case "add-account" -> {
                 requireArgumentCount(arguments, 3);
-                Account account = accounts.createAccount(arguments[1], arguments[2]);
-                output.printf("Created account: %d | %s | %s%n",
-                        account.id(), account.name(), account.email());
+                Account account = accounts.createAccount(
+                    arguments[1],
+                    arguments[2]
+                );
+                output.printf(
+                    "Created account: %d | %s | %s%n",
+                    account.id(),
+                    account.name(),
+                    account.email()
+                );
             }
             case "list-accounts" -> {
                 requireArgumentCount(arguments, 1);
@@ -42,12 +52,22 @@ public final class AdminCli {
                 if (rows.isEmpty()) {
                     output.println("No accounts found.");
                 } else {
-                    rows.forEach(account -> output.printf("%d | %s | %s%n",
-                            account.id(), account.name(), account.email()));
+                    rows.forEach(account ->
+                        output.printf(
+                            "%d | %s | %s%n",
+                            account.id(),
+                            account.name(),
+                            account.email()
+                        )
+                    );
                 }
             }
             default -> throw new IllegalArgumentException(
-                    "Unknown command: " + arguments[0] + System.lineSeparator() + USAGE);
+                "Unknown command: " +
+                    arguments[0] +
+                    System.lineSeparator() +
+                    USAGE
+            );
         }
     }
 
