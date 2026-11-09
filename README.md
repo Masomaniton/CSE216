@@ -8,7 +8,7 @@ The tutorial taker will follow along with `tutorial.md`. This file tells the tut
 
 ### motivation and completion criteria
 
-In the fictional scenario of the tutorial, the production database is down, and so calling `mvn test` fails the test. The tutorial explains how, while the user could use a local SQLite file, this would fail the dev/prod parity principle of the 12-factor app, motitivating the need for docker testcontainers. The tutorial taker is complete when `mvn test` passes. This tutorial includes completed versions of every file so that the tutorial taker can compare to make sure everything matches. The tutorial explains how to do this with git diff, which is useful in case the tutorial taker wants to verify partial work.
+In the fictional scenario of the tutorial, the production database is down, and so calling `mvn package` and `java -jar target/...`. Initially, calling `mvn test` should result in unimplemented exceptions. The tutorial explains how, while the user could use a local SQLite file, this would fail the dev/prod parity principle of the 12-factor app, motitivating the need for docker testcontainers. The tutorial taker is complete when `mvn test` passes. This tutorial includes completed versions of every file so that the tutorial taker can compare to make sure everything matches. The tutorial explains how to do this with git diff, which is useful in case the tutorial taker wants to verify partial work.
 
 ### scope of the Web App
 
