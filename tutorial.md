@@ -84,144 +84,122 @@ Once the Maven dependencies have resolved, the `org.testcontainers` imports shou
 
 ## 4. Replace the unfinished integration tests
 
-Open `work/src/test/java/edu/lehigh/buzz/AdminCliIntegrationTest.java`. Keep the existing package, imports, class declaration, and test method signatures. Section 3 adds the Testcontainers imports, class annotation, and container field. For each item below, replace the marked TODO section with its corresponding code. For the four tests and two helpers, replace the entire method (including its `UnsupportedOperationException`) with the code shown. For `setUp()` and `tearDown()`, paste the complete method where its TODO comment appears.
+Open `work/src/test/java/edu/lehigh/buzz/AdminCliIntegrationTest.java`. For each method below, replace only its TODO comment and the following `throw new UnsupportedOperationException(...)` statement with the code block. Keep the method signature, annotations, and surrounding braces. For `setUp()` and `tearDown()`, replace their TODO comment and placeholder exception in the same way. Do not paste the code block's surrounding method signature or braces; each block contains only the method body statements.
 
-Paste this `setUp()` method at `// TODO: Paste the setUp() method here.`:
+In `setUp()`, replace the placeholder with:
 
 ```java
-@BeforeEach
-void setUp() throws SQLException {
-    connection = DriverManager.getConnection(
-        POSTGRES.getJdbcUrl(),
-        POSTGRES.getUsername(),
-        POSTGRES.getPassword()
-    );
-    adminCli = new AdminCli(connection);
-    capturedOutput = new ByteArrayOutputStream();
-    output = new PrintStream(capturedOutput, true, StandardCharsets.UTF_8);
+connection = DriverManager.getConnection(
+    POSTGRES.getJdbcUrl(),
+    POSTGRES.getUsername(),
+    POSTGRES.getPassword()
+);
+adminCli = new AdminCli(connection);
+capturedOutput = new ByteArrayOutputStream();
+output = new PrintStream(capturedOutput, true, StandardCharsets.UTF_8);
 
-    new AccountsRepository(connection).dropTable();
-}
+new AccountsRepository(connection).dropTable();
 ```
 
-Paste this `tearDown()` method at `// TODO: Paste the tearDown() method here.`:
+In `tearDown()`, replace the placeholder with:
 
 ```java
-@AfterEach
-void tearDown() throws SQLException {
-    try {
-        if (connection != null) {
-            new AccountsRepository(connection).dropTable();
-        }
-    } finally {
-        if (output != null) {
-            output.close();
-        }
-        if (connection != null) {
-            connection.close();
-        }
+try {
+    if (connection != null) {
+        new AccountsRepository(connection).dropTable();
+    }
+} finally {
+    if (output != null) {
+        output.close();
+    }
+    if (connection != null) {
+        connection.close();
     }
 }
 ```
 
-Replace the complete `createTableCommandCreatesAccountsTable()` method with:
+In `createTableCommandCreatesAccountsTable()`, replace the placeholder with:
 
 ```java
-@Test
-void createTableCommandCreatesAccountsTable() throws SQLException {
-    adminCli.run(new String[] { "create-table" }, output);
+adminCli.run(new String[] { "create-table" }, output);
 
-    assertTrue(accountsTableExists());
-    assertTrue(outputText().contains("Created accounts table."));
+assertTrue(accountsTableExists());
+assertTrue(outputText().contains("Created accounts table."));
+```
+
+In `dropTableCommandDropsAccountsTable()`, replace the placeholder with:
+
+```java
+adminCli.run(new String[] { "create-table" }, output);
+assertTrue(accountsTableExists());
+
+adminCli.run(new String[] { "drop-table" }, output);
+
+assertFalse(accountsTableExists());
+assertTrue(outputText().contains("Dropped accounts table."));
+```
+
+In `addAccountCommandInsertsAnAccount()`, replace the placeholder with:
+
+```java
+adminCli.run(new String[] { "create-table" }, output);
+
+adminCli.run(
+    new String[] { "add-account", "Ada Lovelace", "ada@buzz.example" },
+    output
+);
+
+List<Account> accounts = new AccountsRepository(
+    connection
+).listAccounts();
+assertTrue(
+    accounts
+        .stream()
+        .anyMatch(
+            account ->
+                account.name().equals("Ada Lovelace") &&
+                account.email().equals("ada@buzz.example")
+        )
+);
+assertTrue(outputText().contains("Created account:"));
+```
+
+In `listAccountsCommandDisplaysAccounts()`, replace the placeholder with:
+
+```java
+adminCli.run(new String[] { "create-table" }, output);
+adminCli.run(
+    new String[] {
+        "add-account",
+        "Grace Hopper",
+        "grace@buzz.example",
+    },
+    output
+);
+capturedOutput.reset();
+
+adminCli.run(new String[] { "list-accounts" }, output);
+
+assertTrue(outputText().contains("Grace Hopper"));
+assertTrue(outputText().contains("grace@buzz.example"));
+```
+
+In `accountsTableExists()`, replace the placeholder with:
+
+```java
+try (
+    ResultSet tables = connection
+        .getMetaData()
+        .getTables(null, "public", "accounts", new String[] { "TABLE" })
+) {
+    return tables.next();
 }
 ```
 
-Replace the complete `dropTableCommandDropsAccountsTable()` method with:
+In `outputText()`, replace the placeholder with:
 
 ```java
-@Test
-void dropTableCommandDropsAccountsTable() throws SQLException {
-    adminCli.run(new String[] { "create-table" }, output);
-    assertTrue(accountsTableExists());
-
-    adminCli.run(new String[] { "drop-table" }, output);
-
-    assertFalse(accountsTableExists());
-    assertTrue(outputText().contains("Dropped accounts table."));
-}
-```
-
-Replace the complete `addAccountCommandInsertsAnAccount()` method with:
-
-```java
-@Test
-void addAccountCommandInsertsAnAccount() throws SQLException {
-    adminCli.run(new String[] { "create-table" }, output);
-
-    adminCli.run(
-        new String[] { "add-account", "Ada Lovelace", "ada@buzz.example" },
-        output
-    );
-
-    List<Account> accounts = new AccountsRepository(
-        connection
-    ).listAccounts();
-    assertTrue(
-        accounts
-            .stream()
-            .anyMatch(
-                account ->
-                    account.name().equals("Ada Lovelace") &&
-                    account.email().equals("ada@buzz.example")
-            )
-    );
-    assertTrue(outputText().contains("Created account:"));
-}
-```
-
-Replace the complete `listAccountsCommandDisplaysAccounts()` method with:
-
-```java
-@Test
-void listAccountsCommandDisplaysAccounts() throws SQLException {
-    adminCli.run(new String[] { "create-table" }, output);
-    adminCli.run(
-        new String[] {
-            "add-account",
-            "Grace Hopper",
-            "grace@buzz.example",
-        },
-        output
-    );
-    capturedOutput.reset();
-
-    adminCli.run(new String[] { "list-accounts" }, output);
-
-    assertTrue(outputText().contains("Grace Hopper"));
-    assertTrue(outputText().contains("grace@buzz.example"));
-}
-```
-
-Replace the complete `accountsTableExists()` helper with:
-
-```java
-private boolean accountsTableExists() throws SQLException {
-    try (
-        ResultSet tables = connection
-            .getMetaData()
-            .getTables(null, "public", "accounts", new String[] { "TABLE" })
-    ) {
-        return tables.next();
-    }
-}
-```
-
-Replace the complete `outputText()` helper with:
-
-```java
-private String outputText() {
-    return capturedOutput.toString(StandardCharsets.UTF_8);
-}
+return capturedOutput.toString(StandardCharsets.UTF_8);
 ```
 
 `@Testcontainers` starts the static PostgreSQL container once for this test class. `setUp()` opens a connection for each test and removes any leftover table; `tearDown()` cleans up and closes resources. Each test runs an `AdminCli` command and checks the resulting database state or output. The `drop-table` command is safe here because the connection points to the disposable container.

@@ -18,3 +18,5 @@ Read [tutorial.md](tutorial.md) and do the exercises in the `work/` Maven projec
 The `solution/` directory is a separate, completed Maven project for comparison. Do not edit it while doing the exercise.
 
 Both projects target Java 17. Docker must be installed and running to execute the completed tests.
+
+Tutorial attribution: **GPT-6 Luna Max**.

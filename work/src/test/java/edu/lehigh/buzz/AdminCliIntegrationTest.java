@@ -25,15 +25,23 @@ class AdminCliIntegrationTest {
     private ByteArrayOutputStream capturedOutput;
     private PrintStream output;
 
-    // TODO: Paste the setUp() method here.
+    @BeforeEach
+    void setUp() throws SQLException {
+        // TODO: Initialize the connection and output.
+        throw new UnsupportedOperationException("Initialize test setup.");
+    }
 
-    // TODO: Paste the tearDown() method here.
+    @AfterEach
+    void tearDown() throws SQLException {
+        // TODO: Clean up the table and close resources.
+        throw new UnsupportedOperationException("Clean up test setup.");
+    }
 
     @Test
     void createTableCommandCreatesAccountsTable() throws SQLException {
         // TODO: Complete this test using a PostgreSQL Testcontainer.
         throw new UnsupportedOperationException(
-            "TODO: Test create-table with PostgreSQL."
+            "Test create-table with PostgreSQL."
         );
     }
 
@@ -41,7 +49,7 @@ class AdminCliIntegrationTest {
     void dropTableCommandDropsAccountsTable() throws SQLException {
         // TODO: Complete this test using a PostgreSQL Testcontainer.
         throw new UnsupportedOperationException(
-            "TODO: Test drop-table with PostgreSQL."
+            "Test drop-table with PostgreSQL."
         );
     }
 
@@ -49,7 +57,7 @@ class AdminCliIntegrationTest {
     void addAccountCommandInsertsAnAccount() throws SQLException {
         // TODO: Complete this test using a PostgreSQL Testcontainer.
         throw new UnsupportedOperationException(
-            "TODO: Test add-account with PostgreSQL."
+            "Test add-account with PostgreSQL."
         );
     }
 
@@ -57,17 +65,17 @@ class AdminCliIntegrationTest {
     void listAccountsCommandDisplaysAccounts() throws SQLException {
         // TODO: Complete this test using a PostgreSQL Testcontainer.
         throw new UnsupportedOperationException(
-            "TODO: Test list-accounts with PostgreSQL."
+            "Test list-accounts with PostgreSQL."
         );
     }
 
     private boolean accountsTableExists() throws SQLException {
         // TODO: Check PostgreSQL metadata for the accounts table.
-        throw new UnsupportedOperationException("TODO: Check accounts table.");
+        throw new UnsupportedOperationException("Check accounts table.");
     }
 
     private String outputText() {
         // TODO: Return the captured output as UTF-8 text.
-        throw new UnsupportedOperationException("TODO: Read captured output.");
+        throw new UnsupportedOperationException("Read captured output.");
     }
 }
